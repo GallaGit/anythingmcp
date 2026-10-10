@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { ConnectionCheck } from '@/components/connection-check';
 import { copyText } from '@/lib/clipboard';
 import { CLAUDE_DIRECTORY_URL } from '@/lib/marketing';
+import { inspectorUrl } from '@/lib/inspector-url';
 
 // Opens claude.ai straight on its "Add custom connector" dialog. Connectors
 // moved from Settings to Customize → Connectors; the old settings URL now only
@@ -355,6 +356,7 @@ export default function McpServerDetailPage() {
     { id: 'muse', name: 'Meta Muse', init: 'Mu', tone: 'info' },
     { id: 'gemini', name: 'Gemini CLI', init: 'Ge', tone: 'pink' },
     { id: 'windsurf', name: 'Windsurf', init: 'Wi', tone: 'success' },
+    { id: 'inspector', name: 'MCP Inspector', init: 'In', tone: 'neutral' },
   ];
 
   const codeBlock = (text: string, label: string) => (
@@ -618,6 +620,36 @@ Auth: OAuth`;
             {codeBlock(windsurfConfig, 'windsurf')}
           </div>
         );
+      case 'inspector': {
+        const cmd = `npx @modelcontextprotocol/inspector`;
+        return (
+          <div className="space-y-4">
+            <p className="text-[13px] leading-[1.55] text-[var(--text-2)]">
+              Run this command in your terminal:
+            </p>
+            <div className="flex gap-2">
+              <code className="flex-1 break-all rounded-[8px] border border-[var(--border)] bg-[var(--surface-2)] px-[11px] py-[9px] font-mono text-[12px] text-[var(--text-2)]">{cmd}</code>
+              <button
+                onClick={() => handleCopy(cmd, 'modal-inspector')}
+                className={cn(buttonVariants({ variant: 'secondary', size: 'md' }), 'flex-shrink-0')}
+              >
+                {copied === 'modal-inspector' ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <p className="text-[13px] leading-[1.55] text-[var(--text-2)]">
+              Then open the Inspector in your browser:
+            </p>
+            {linkAction(inspectorUrl(endpointUrl), 'Open in MCP Inspector', true)}
+            <p className="text-xs leading-[1.55] text-[var(--text-3)]">
+              On startup the Inspector prints a URL with <code className="rounded bg-[var(--surface-2)] px-1 font-mono">MCP_PROXY_AUTH_TOKEN</code> — open that URL, or paste the token when it asks for it.
+            </p>
+            <p className="text-[13px] leading-[1.55] text-[var(--text-2)]">
+              Sign in with OAuth (connect, sign in and approve access) or with an API key in the <code className="rounded bg-[var(--surface-2)] px-1 font-mono text-xs">X-API-Key</code> header from the Inspector&apos;s authentication settings.
+            </p>
+            {endpointRow('modal-inspector-url')}
+          </div>
+        );
+      }
       default:
         return null;
     }
