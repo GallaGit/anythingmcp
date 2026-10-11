@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { ConnectionCheck } from '@/components/connection-check';
 import { copyText } from '@/lib/clipboard';
 import { CLAUDE_DIRECTORY_URL } from '@/lib/marketing';
-import { inspectorUrl } from '@/lib/inspector-url';
+import { INSPECTOR_URL, inspectorCommand } from '@/lib/inspector-url';
 
 // Opens claude.ai straight on its "Add custom connector" dialog. Connectors
 // moved from Settings to Customize → Connectors; the old settings URL now only
@@ -621,11 +621,11 @@ Auth: OAuth`;
           </div>
         );
       case 'inspector': {
-        const cmd = `npx @modelcontextprotocol/inspector`;
+        const cmd = inspectorCommand(endpointUrl);
         return (
           <div className="space-y-4">
             <p className="text-[13px] leading-[1.55] text-[var(--text-2)]">
-              Run this command in your terminal:
+              Run this command in your terminal (Node 22.19 or later). It starts the Inspector already pointed at this server:
             </p>
             <div className="flex gap-2">
               <code className="flex-1 break-all rounded-[8px] border border-[var(--border)] bg-[var(--surface-2)] px-[11px] py-[9px] font-mono text-[12px] text-[var(--text-2)]">{cmd}</code>
@@ -637,14 +637,14 @@ Auth: OAuth`;
               </button>
             </div>
             <p className="text-[13px] leading-[1.55] text-[var(--text-2)]">
-              Then open the Inspector in your browser:
+              The Inspector opens in your browser. If it doesn&apos;t, open it here:
             </p>
-            {linkAction(inspectorUrl(endpointUrl), 'Open in MCP Inspector', true)}
+            {linkAction(INSPECTOR_URL, 'Open in MCP Inspector', true)}
             <p className="text-xs leading-[1.55] text-[var(--text-3)]">
-              On startup the Inspector prints a URL with <code className="rounded bg-[var(--surface-2)] px-1 font-mono">MCP_PROXY_AUTH_TOKEN</code> — open that URL, or paste the token when it asks for it.
+              The Inspector hands its session token (<code className="rounded bg-[var(--surface-2)] px-1 font-mono">MCP_INSPECTOR_API_TOKEN</code>) to the page it opens, so you don&apos;t need to copy it.
             </p>
             <p className="text-[13px] leading-[1.55] text-[var(--text-2)]">
-              Sign in with OAuth (connect, sign in and approve access) or with an API key in the <code className="rounded bg-[var(--surface-2)] px-1 font-mono text-xs">X-API-Key</code> header from the Inspector&apos;s authentication settings.
+              Sign in with OAuth when the Inspector asks (connect, sign in and approve access), or use an API key: add <code className="rounded bg-[var(--surface-2)] px-1 font-mono text-xs">--header &quot;X-API-Key: &lt;your key&gt;&quot;</code> to the command, or set an <code className="rounded bg-[var(--surface-2)] px-1 font-mono text-xs">X-API-Key</code> header in the server&apos;s settings in the Inspector.
             </p>
             {endpointRow('modal-inspector-url')}
           </div>

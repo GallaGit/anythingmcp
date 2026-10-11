@@ -174,7 +174,7 @@ GET https://<your-host>/.well-known/oauth-authorization-server
 
 ### Test with the MCP Inspector
 
-The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) shows what this server exposes from the outside: `tools/list`, input schemas, a test call and the raw JSON-RPC messages. Run `npx @modelcontextprotocol/inspector`, then use **Quick Connect → MCP Inspector** on the server page to open it with this server's URL. Sign in with OAuth, or add an `X-API-Key` header in the Inspector's authentication settings.
+The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) shows what this server exposes from the outside: `tools/list`, input schemas, a test call and the raw JSON-RPC messages. On the server page, open **Quick Connect → MCP Inspector** and run the command it shows (`npx @modelcontextprotocol/inspector --server-url <endpoint> --transport http`, Node 22.19+); the Inspector opens at http://localhost:6274 already pointed at this server. Sign in with OAuth, or pass an API key with `--header "X-API-Key: <your key>"`. Never put a key in a link.
 
 ---
 
