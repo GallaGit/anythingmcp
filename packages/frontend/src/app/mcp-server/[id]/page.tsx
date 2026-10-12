@@ -644,7 +644,7 @@ Auth: OAuth`;
               The Inspector hands its session token (<code className="rounded bg-[var(--surface-2)] px-1 font-mono">MCP_INSPECTOR_API_TOKEN</code>) to the page it opens, so you don&apos;t need to copy it.
             </p>
             <p className="text-[13px] leading-[1.55] text-[var(--text-2)]">
-              Sign in with OAuth when the Inspector asks (connect, sign in and approve access), or use an API key: add <code className="rounded bg-[var(--surface-2)] px-1 font-mono text-xs">--header &quot;X-API-Key: &lt;your key&gt;&quot;</code> to the command, or set an <code className="rounded bg-[var(--surface-2)] px-1 font-mono text-xs">X-API-Key</code> header in the server&apos;s settings in the Inspector.
+              Sign in with OAuth when the Inspector asks (connect, sign in and approve access), or use an API key: set an <code className="rounded bg-[var(--surface-2)] px-1 font-mono text-xs">X-API-Key</code> header in the server&apos;s settings in the Inspector. You can also add <code className="rounded bg-[var(--surface-2)] px-1 font-mono text-xs">--header &quot;X-API-Key: &lt;your key&gt;&quot;</code> to the command, but the key then stays in your shell history.
             </p>
             {endpointRow('modal-inspector-url')}
           </div>
