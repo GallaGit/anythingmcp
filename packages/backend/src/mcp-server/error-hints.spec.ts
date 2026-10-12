@@ -32,6 +32,23 @@ describe('deriveErrorHint', () => {
     ).toMatch(/stock\.lot/);
   });
 
+  it('names phone when Odoo 18.3+ refuses the dropped mobile field on contacts', () => {
+    // 10 Oct 2026: 28 calls in a day asked res.partner for mobile on Odoo 19.
+    const rest = deriveErrorHint({
+      host: 'acme.odoo.com',
+      status: 500,
+      body: { name: 'builtins.ValueError', message: "Invalid field 'mobile' on 'res.partner'" },
+    });
+    expect(rest).toMatch(/`phone`/);
+    expect(
+      deriveErrorHint({ message: "JSON-RPC error 200: Odoo Server Error: Invalid field res.partner.mobile in leaf ('mobile', '!=', False)" }),
+    ).toMatch(/`phone`/);
+    // Another model's own mobile field keeps the generic advice.
+    expect(
+      deriveErrorHint({ status: 500, body: { message: "Invalid field 'mobile' on 'hr.employee'" } }),
+    ).toMatch(/fields_get/);
+  });
+
   describe('weclapp', () => {
     it('explains unknown properties instead of letting the model guess spellings', () => {
       const hint = deriveErrorHint({
@@ -153,6 +170,23 @@ describe('deriveErrorHint — SQL-backed customer APIs', () => {
     expect(
       deriveErrorHint({ host: 'api.example.com', status: 400, body: { message: 'Invalid request.' } }),
     ).toBeUndefined();
+  });
+
+  it('reads Figma\'s "File not found" on dev resources as missing Dev Mode, not a missing file', () => {
+    const read = deriveErrorHint({
+      host: 'api.figma.com',
+      status: 404,
+      body: { error: true, status: 404, message: 'File not found', i18n: 'error.not_found' },
+    });
+    expect(read).toMatch(/Dev Mode/);
+    const write = deriveErrorHint({
+      host: 'api.figma.com',
+      status: 400,
+      message: 'The API answered with an error in a successful response: File not found',
+      body: { links_created: [], errors: [{ file_key: 'k', node_id: '1:2', error: 'File not found' }] },
+    });
+    expect(write).toBe(read);
+    expect(deriveErrorHint({ host: 'api.figma.com', status: 404, body: { status: 404, err: 'Not found' } })).toBeUndefined();
   });
 
   it('tells the user to install the Shopify app when the token answers app_not_installed', () => {

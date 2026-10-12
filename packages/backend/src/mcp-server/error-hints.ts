@@ -37,6 +37,13 @@ const ODOO_FIELD_HINT =
   'Odoo versions and installed apps. Do not guess another spelling: list the model\'s fields ' +
   'first (odoo_fields_get, or fields_get on the model) and use only the names it returns.';
 
+// Odoo 18.3 dropped `mobile` from contacts (res.partner, and res.users through
+// it); one number field is left. On 10 Oct 2026 a scheduled job asked for it 28
+// times in a day on Odoo 19, and the generic field hint did not stop it.
+const ODOO_PARTNER_MOBILE_HINT =
+  'Odoo 18.3 and later (Odoo 19 included) have no `mobile` field on contacts: every number is ' +
+  'in `phone`. Ask for `phone` instead and leave `mobile` out of fields and domains.';
+
 const ODOO_MODEL_HINT =
   'That model does not exist in this Odoo database: it was renamed in newer versions or its ' +
   'app is not installed (for example stock.production.lot is stock.lot since Odoo 16). Check ' +
@@ -159,6 +166,13 @@ const PRINTFUL_STORE_ID_HINT =
   'empty, the account has no store yet: the user must create one in Printful ' +
   '(Stores → Add store → "Manual order platform / API") first.';
 
+const FIGMA_NO_DEV_MODE_HINT =
+  'Figma answers "File not found" to dev resource calls when the user has no Dev Mode ' +
+  'access to the file, even though the file exists (a file Figma really cannot find ' +
+  'answers "Not found"). Dev Mode needs a paid Figma plan and a Full or Dev seat; a ' +
+  'Starter or locked team, or a View or Collab seat, is refused. Retrying will not help: ' +
+  'tell the user that dev resources are not available to them on this file.';
+
 function bodyText(body: unknown): string {
   if (body === undefined || body === null) return '';
   if (typeof body === 'string') return body;
@@ -214,6 +228,9 @@ export function deriveErrorHint(input: ErrorHintInput): string | undefined {
 
   // Odoo answers an unknown field or model with a 500 ValueError (REST) or a
   // JSON-RPC "Odoo Server Error", and the host is the customer's own domain.
+  if (/Invalid field '?(?:res\.(?:partner|users)\.)?mobile'? (?:on '?res\.(?:partner|users)|in leaf)/i.test(text)) {
+    return ODOO_PARTNER_MOBILE_HINT;
+  }
   if (/Invalid field '[^']+' on '[^']+'|Invalid field [\w.]+ in leaf|Invalid field '[^']+' on model/i.test(text)) {
     return ODOO_FIELD_HINT;
   }
@@ -265,6 +282,13 @@ export function deriveErrorHint(input: ErrorHintInput): string | undefined {
 
   if (/voucherStatus filter 'overdue' cannot be used in combination/i.test(text)) {
     return LEXWARE_OVERDUE_HINT;
+  }
+
+  // Figma hides a file from the dev resource API when the user lacks Dev Mode:
+  // 404 {"message": "File not found"} on a read, `errors[].error` on a write.
+  // A missing file reads {"err": "Not found"} instead.
+  if (hostMatches(input.host, 'api.figma.com') && /File not found/.test(text)) {
+    return FIGMA_NO_DEV_MODE_HINT;
   }
 
   // TypeSafe answers a question with an unknown type (and any other field it

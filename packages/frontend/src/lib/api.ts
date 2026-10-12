@@ -351,6 +351,8 @@ export const connectors = {
       tokenUrl: string;
       scopes: string;
       tokenAuthMethod: string;
+      /** Whether "Authorize with Provider" sends PKCE (on unless turned off). */
+      pkce: boolean;
       hasClientSecret: boolean;
       hasAccessToken: boolean;
       hasRefreshToken: boolean;
@@ -368,6 +370,7 @@ export const connectors = {
       tokenUrl?: string;
       scopes?: string;
       tokenAuthMethod?: string;
+      pkce?: boolean;
     },
     token: string,
   ) =>
@@ -1031,7 +1034,37 @@ export const adminSettings = {
     request<{ hosts: string[]; envHosts: string[] }>('/api/admin/settings/ssrf-allowed-hosts', { token }),
   setSsrfAllowedHosts: (hosts: string[], token: string) =>
     request<{ hosts: string[] }>('/api/admin/settings/ssrf-allowed-hosts', { method: 'PUT', body: { hosts }, token }),
+  // Connector-failure alert webhook. GET returns `{ configured: false }` when
+  // unset, or the config fields directly (no wrapper) when set — callers
+  // check for `url` rather than a `configured` flag that isn't always there.
+  getAlertWebhook: (token: string) =>
+    request<AlertWebhookConfig | { configured: false }>('/api/admin/settings/alert-webhook', { token }),
+  updateAlertWebhook: (data: AlertWebhookInput, token: string) =>
+    request<{ message: string; secret?: string }>('/api/admin/settings/alert-webhook', { method: 'PUT', body: data, token }),
+  deleteAlertWebhook: (token: string) =>
+    request<{ message: string }>('/api/admin/settings/alert-webhook', { method: 'DELETE', token }),
+  testAlertWebhook: (token: string) =>
+    request<{ success: boolean; status?: number; message?: string }>('/api/admin/settings/alert-webhook/test', { method: 'POST', token }),
 };
+
+export interface AlertWebhookConfig {
+  url: string;
+  type: 'json' | 'slack';
+  enabled: boolean;
+  threshold: number;
+  windowMinutes: number;
+  cooldownMinutes: number;
+}
+
+export interface AlertWebhookInput {
+  url: string;
+  type: 'json' | 'slack';
+  enabled?: boolean;
+  threshold?: number;
+  windowMinutes?: number;
+  cooldownMinutes?: number;
+  rotateSecret?: boolean;
+}
 
 // Roles (Admin)
 export interface IdentityProvider {

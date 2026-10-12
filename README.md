@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/HelpCode-ai/anythingmcp/badges/banner.png" alt="AnythingMCP turns ERP, e-commerce, REST, SOAP and SQL systems into MCP tools for Claude and ChatGPT: 338 connectors, 17 of them with no API key." width="100%" />
+  <img src="https://raw.githubusercontent.com/HelpCode-ai/anythingmcp/badges/banner.png" alt="AnythingMCP turns ERP, e-commerce, REST, SOAP and SQL systems into MCP tools for Claude and ChatGPT: 373 connectors, 18 of them with no API key." width="100%" />
 </p>
 
 <h1 align="center">AnythingMCP: self-hosted MCP gateway</h1>
@@ -19,7 +19,7 @@
 
 <p align="center">
   <strong>AnythingMCP is an open-source, self-hosted MCP gateway that turns any REST/OpenAPI, SOAP, GraphQL, OData or SQL system into MCP tools for Claude, ChatGPT and Copilot, without writing an MCP server.</strong><br/>
-  It ships 338 ready connectors, among them SAP, Etsy, weclapp and Amazon Seller, and 17 of them need no API key.
+  It ships 373 ready connectors, among them SAP, Etsy, weclapp and Amazon Seller, and 18 of them need no API key.
 </p>
 
 <p align="center">
@@ -103,7 +103,7 @@ Tools register at runtime, without a restart. Per-connector `{{VAR}}` values are
 
 ## Connector catalog
 
-338 adapters, exposing 2,400+ tools. Every one has a setup guide on [anythingmcp.com/guides](https://anythingmcp.com/guides), in seven languages.
+373 adapters, exposing 2,400+ tools. Every one has a setup guide on [anythingmcp.com/guides](https://anythingmcp.com/guides), in seven languages.
 
 | Category | Examples |
 |---|---|
@@ -134,7 +134,7 @@ Tools register at runtime, without a restart. Per-connector `{{VAR}}` values are
 | [ERPNext](https://anythingmcp.com/guides/connect-erpnext-to-claude) | Global | 11 | Any DocType: customers, sales orders, invoices, items, stock |
 | [Dolibarr](https://anythingmcp.com/guides/connect-dolibarr-to-claude) | Global | 10 | Third parties, invoices, orders, proposals, products, stock |
 | [JTL-Wawi](https://anythingmcp.com/guides/connect-jtl-wawi-to-claude) † | DE | 10 | Items, stock per warehouse, customers, sales orders, shipments |
-| [Xentral](https://anythingmcp.com/guides/connect-xentral-to-claude) | DE | 7 | Articles, customers, sales orders, invoices, stock |
+| [Xentral](https://anythingmcp.com/guides/connect-xentral-to-claude) † | DE | 30 | Products, stock per warehouse and bin, customers, suppliers, sales orders, delivery notes, invoices with payment status, credit notes, purchase orders; create order drafts |
 | [weclapp](https://anythingmcp.com/guides/connect-weclapp-to-claude) | DACH | 11 | Customers, sales orders, invoices, articles, quotations, opportunities |
 | [Sage 100](https://anythingmcp.com/guides/connect-sage-100-to-claude) † | DE | 6 | Addresses, items, sales documents, any Web API entity |
 | [Haufe X360](https://anythingmcp.com/guides/connect-haufe-x360-to-claude) † | DE | 7 | Customers, stock items, sales orders, invoices, shipments |
