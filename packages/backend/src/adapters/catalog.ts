@@ -383,6 +383,7 @@ import * as quipu from './es/quipu.json';
 import * as axonaut from './fr/axonaut.json';
 import * as dolibarr from './fr/dolibarr.json';
 import * as pennylane from './fr/pennylane.json';
+import * as qonto from './fr/qonto.json';
 import * as sellsy from './fr/sellsy.json';
 import * as afasProfit from './nl/afas-profit.json';
 import * as exactOnline from './nl/exact-online.json';
@@ -984,6 +985,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   axonaut as unknown as AdapterDefinition,
   dolibarr as unknown as AdapterDefinition,
   pennylane as unknown as AdapterDefinition,
+  qonto as unknown as AdapterDefinition,
   sellsy as unknown as AdapterDefinition,
   afasProfit as unknown as AdapterDefinition,
   exactOnline as unknown as AdapterDefinition,
