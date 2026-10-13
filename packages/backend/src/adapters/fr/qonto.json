@@ -2,7 +2,7 @@
   "slug": "qonto",
   "name": "Qonto",
   "description": "Qonto — French business account for SMBs and freelancers: organization and bank accounts, transactions, client and supplier invoices, clients and quotes. Official Business API v2, read-only, login:secret-key API key. 7 tools.",
-  "instructions": "This connector reads your **Qonto** business account through the official Business API: organization and bank accounts, transactions, client invoices, supplier invoices, clients and quotes. It is **read-only**: every tool is a GET, so it cannot send transfers, add beneficiaries, touch cards or create, edit or delete invoices.\n\n**Getting the credentials**\n1. Sign in to the Qonto web app (https://app.qonto.com) and, if you have several organizations, pick the one to connect.\n2. Open **Integrations & Partnerships → API key** and click **Generate** if no secret key exists yet.\n3. Put the **login** (sign-in, e.g. `pied-piper-7132`) in `QONTO_LOGIN` and the **secret key** in `QONTO_SECRET_KEY`.\n\n**How authentication works**: Qonto expects `Authorization: <login>:<secret-key>`. This looks like HTTP Basic but is not: no Base64 and no `Bearer` prefix. A 401 almost always means a wrong login or secret.\n\n**Bank data is sensitive.** The connector sees every bank account of the organization. Assign it only to MCP servers whose users are allowed to see the company's bank accounts and transactions.\n\n**Workflow**: call `qonto_get_organization` first to get the bank account `id` (or IBAN); `qonto_list_transactions` works on one account at a time and needs one of them.\n\n**Pagination**: list tools take `page` and `per_page` (1 to 100, default 100); responses carry `meta.next_page` and `meta.total_pages`.\n\n**Amounts**: transactions expose `amount` and `amount_cents`; prefer the cents for arithmetic.\n\n**Sandbox**: create an application on the Qonto Developer Portal (https://developers.qonto.com) to get a sandbox organization and a personal staging token. After install, edit the connector: set the base URL to `https://thirdparty-sandbox.staging.qonto.co/v2` and add the header `X-Qonto-Staging-Token: <your token>` (case-sensitive). Without it, sandbox calls return a OneLogin HTML page instead of JSON. The staging token is not accepted in production.\n\n**Cloud reachability**: thirdparty.qonto.com is public with a valid certificate.",
+  "instructions": "This connector reads your **Qonto** business account through the official Business API: organization and bank accounts, transactions, client invoices, supplier invoices, clients and quotes. It is **read-only**: every tool is a GET, so it cannot send transfers, add beneficiaries, touch cards or create, edit or delete invoices.\n\n**Getting the credentials**\n1. Sign in to the Qonto web app (https://app.qonto.com) and, if you have several organizations, pick the one to connect.\n2. Open **Integrations & Partnerships → API key** and click **Generate** if no secret key exists yet.\n3. Put the **login** (sign-in, e.g. `pied-piper-7132`) in `QONTO_LOGIN` and the **secret key** in `QONTO_SECRET_KEY`.\n\n**How authentication works**: Qonto expects `Authorization: <login>:<secret-key>`. This looks like HTTP Basic but is not: no Base64 and no `Bearer` prefix. A 401 almost always means a wrong login or secret.\n\n**Bank data is sensitive.** The connector sees every bank account of the organization. Assign it only to MCP servers whose users are allowed to see the company's bank accounts and transactions.\n\n**Workflow**: call `qonto_get_organization` first to get the bank account `id` (or IBAN); `qonto_list_transactions` lists one account at a time; passing `bank_account_id` or `iban` is recommended (whether Qonto rejects a call without them is pending verification).\n\n**Pagination**: list tools take `page` and `per_page` (1 to 100, default 100); responses carry `meta.next_page` and `meta.total_pages`.\n\n**Amounts**: transactions expose `amount` and `amount_cents`; prefer the cents for arithmetic.\n\n**Sandbox**: create an application on the Qonto Developer Portal (https://developers.qonto.com) to get a sandbox organization and a personal staging token. After install, edit the connector: set the base URL to `https://thirdparty-sandbox.staging.qonto.co/v2` and add the header `X-Qonto-Staging-Token: <your token>` (case-sensitive). Without it, sandbox calls return a OneLogin HTML page instead of JSON. The staging token is not accepted in production.\n\n**Cloud reachability**: thirdparty.qonto.com is public with a valid certificate.",
   "region": "fr",
   "category": "banking",
   "icon": "qonto",
@@ -42,7 +42,7 @@
     },
     {
       "name": "qonto_list_transactions",
-      "description": "List transactions of ONE bank account. Requires bank_account_id or iban taken from qonto_get_organization first. Filter by settled/emitted date range, side (credit/debit), status and operation type; paginated with page/per_page.",
+      "description": "List transactions of one bank account. Pass bank_account_id or iban (recommended; call qonto_get_organization first to get them, a call without them is pending verification). Without a status filter Qonto returns only completed transactions. Filter by date range, side, status and operation type; paginated.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -76,7 +76,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Transaction status, e.g. pending, declined, completed (sent as status[])."
+            "description": "One status per call: pending, declined, completed or reversed (sent as status[]). When omitted, Qonto returns only completed transactions, so set it to see pending or declined ones."
           },
           "operation_type": {
             "type": "string",
@@ -177,6 +177,14 @@
           "per_page": {
             "type": "integer",
             "description": "Items per page, 1 to 100 (Qonto default 100)."
+          },
+          "updated_at_from": {
+            "type": "string",
+            "description": "ISO 8601; updated on or after (filter[updated_at_from])."
+          },
+          "updated_at_to": {
+            "type": "string",
+            "description": "ISO 8601; updated on or before (filter[updated_at_to])."
           }
         }
       },
@@ -189,6 +197,8 @@
           "filter[due_date_to]": "$due_date_to",
           "filter[created_at_from]": "$created_at_from",
           "filter[created_at_to]": "$created_at_to",
+          "filter[updated_at_from]": "$updated_at_from",
+          "filter[updated_at_to]": "$updated_at_to",
           "sort_by": "$sort_by",
           "page": "$page",
           "per_page": "$per_page"
@@ -197,13 +207,13 @@
     },
     {
       "name": "qonto_list_supplier_invoices",
-      "description": "List supplier invoices received in Qonto, filtered by status, creation date and a free-text query (supplier name, invoice number). Useful to find bills to pay or missing documents.",
+      "description": "List supplier invoices received in Qonto, filtered by status, creation date and a free-text query over the fields named in query_fields. Useful to find bills to review or pay, or missing documents.",
       "parameters": {
         "type": "object",
         "properties": {
           "status": {
             "type": "string",
-            "description": "Supplier invoice status, e.g. to_review, to_pay, paid (filter[status])."
+            "description": "Supplier invoice status, e.g. to_review, to_approve, awaiting_payment, pending, paid (filter[status]). to_pay is deprecated by Qonto; use to_review."
           },
           "created_at_from": {
             "type": "string",
@@ -215,7 +225,11 @@
           },
           "query": {
             "type": "string",
-            "description": "Free-text search over supplier name, invoice number and similar fields."
+            "description": "Free-text search; Qonto applies it to the fields listed in query_fields."
+          },
+          "query_fields": {
+            "type": "string",
+            "description": "Comma-separated fields searched by query, e.g. supplier_name,amount,file_name,invoice_number."
           },
           "sort_by": {
             "type": "string",
@@ -239,6 +253,7 @@
           "filter[created_at_from]": "$created_at_from",
           "filter[created_at_to]": "$created_at_to",
           "query": "$query",
+          "query_fields": "$query_fields",
           "sort_by": "$sort_by",
           "page": "$page",
           "per_page": "$per_page"

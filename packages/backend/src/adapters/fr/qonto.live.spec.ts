@@ -51,6 +51,13 @@ describe('qonto adapter — static spec conformance', () => {
   it('tells the agent to fetch a bank account before listing transactions', () => {
     const tx = a.tools.find((t) => t.name === 'qonto_list_transactions')!;
     expect(tx.description).toContain('qonto_get_organization');
+    expect(tx.description).toContain('only completed');
+  });
+
+  it('does not suggest the deprecated to_pay supplier invoice status as a filter', () => {
+    const si = a.tools.find((t) => t.name === 'qonto_list_supplier_invoices')!;
+    expect(JSON.stringify(si)).toContain('to_review');
+    expect(JSON.stringify(si)).toContain('query_fields');
   });
 
   it('documents the sandbox host and staging header', () => {
