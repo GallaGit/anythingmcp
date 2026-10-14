@@ -146,6 +146,14 @@ curl -s http://localhost:4000/api/connectors/$ID/import \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"source": "json", "content": "[{\"name\":\"tool\",\"description\":\"desc\",...}]"}'
+
+# From a HAR file (browser network capture) — the UI slims the file (strips
+# response bodies, cookies and credential headers) before upload; do the same
+# before sending one by hand.
+curl -s http://localhost:4000/api/connectors/$ID/import \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"source": "har", "content": "{\"log\":{\"version\":\"1.2\",\"entries\":[...]}}"}'
 ```
 
 ### Set Environment Variables
@@ -323,6 +331,21 @@ works only for that server: on `/mcp/<that server>`, and on the shared `/mcp`
 with that server's tools. Other servers answer `403`. The server must be one of
 an organization you belong to, and deleting it deactivates its keys. A key
 created without `mcpServerId` reaches every server of your organization.
+
+### CLI
+
+The repository includes the [`amcp` CLI](../packages/cli/README.md) for logging
+in with an MCP API key and listing tools on a specific server. Build it with
+`npm run build -w packages/cli`, then run:
+
+```bash
+node packages/cli/dist/index.js login --url http://localhost:4000 --server YOUR_SERVER_ID
+node packages/cli/dist/index.js tools ls
+```
+
+The CLI constructs `/mcp/<serverId>` from the instance URL and server ID.
+The `/api/*` endpoints in this reference use a JWT, while the CLI connects to
+MCP with an MCP API key.
 
 ---
 
