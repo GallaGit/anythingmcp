@@ -18,7 +18,7 @@ const USER = {
 
 const DIRECTORY_URL = 'https://claude.ai/directory/anythingmcp';
 
-async function openServerPage(page: Page, deploymentMode: 'cloud' | 'self-hosted', mcpAuthMode = 'oauth2') {
+async function openServerPage(page: Page, deploymentMode: 'cloud' | 'self-hosted', mcpAuthMode = 'oauth2', slug = 'search') {
   const origin = test.info().project.use.baseURL ?? 'http://localhost:3100';
   await page.context().addCookies([{ name: 'amcp_token', value: 'test-token', url: origin }]);
   await page.addInitScript((user) => {
@@ -38,7 +38,7 @@ async function openServerPage(page: Page, deploymentMode: 'cloud' | 'self-hosted
       return json({ deploymentMode, mcpAuthMode, hasUsers: true, registrationEnabled: true, ssoProviders: [] });
     }
     if (p.endsWith('/mcp-servers/s1')) {
-      return json({ id: 's1', name: 'Search', slug: 'search', isActive: true, apiKeys: [], connectors: [] });
+      return json({ id: 's1', name: 'Search', slug, isActive: true, apiKeys: [], connectors: [] });
     }
     if (p.endsWith('/users/me/onboarding-state')) return json({ onboardingCompletedAt: '2026-01-01T00:00:00Z' });
     if (p.endsWith('/users/me')) return json(USER);
@@ -134,6 +134,7 @@ test.describe('MCP server Share card', () => {
     await expect(card.getByText('Share this server')).toBeVisible();
     await expect(card.getByTestId('share-preview').getByRole('link')).toHaveCount(2);
     await expect(card.locator('img')).toHaveCount(0);
+    await expect(card.getByRole('button', { name: /copy/i })).toHaveCount(2);
 
     const endpoint = (await page.locator('code', { hasText: /\/mcp\/s1$/ }).first().textContent())!.trim();
     // The dev server runs on localhost, so the warning must show.
@@ -151,6 +152,12 @@ test.describe('MCP server Share card', () => {
     expect(JSON.parse(Buffer.from(cursorUrl.searchParams.get('config')!, 'base64').toString())).toEqual({ url: endpoint });
     expect(JSON.parse(vscodeUrl.searchParams.get('config')!)).toEqual({ name: 'search', type: 'http', url: endpoint });
 
+    const previewHrefs = await card.getByTestId('share-preview').getByRole('link').evaluateAll((els) => els.map((e) => e.getAttribute('href')));
+    expect(previewHrefs).toEqual([
+      links.find((l) => l.startsWith('https://cursor.com/en/install-mcp')),
+      links.find((l) => l.startsWith('https://vscode.dev/redirect/mcp/install')),
+    ]);
+
     await card.getByRole('button', { name: 'Copy HTML' }).click();
     const html = await page.evaluate(() => navigator.clipboard.readText());
     expect(html).toContain('<a href="https://cursor.com/en/install-mcp?');
@@ -159,6 +166,39 @@ test.describe('MCP server Share card', () => {
 
     await card.screenshot({ path: process.env.SHARE_SCREENSHOT || test.info().outputPath('share-preview.png') });
     expect(foreign).toEqual([]);
+  });
+
+  test('parentheses in the slug cannot break out of the Markdown badge link', async ({ page, context }) => {
+    const origin = test.info().project.use.baseURL ?? 'http://localhost:3100';
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
+    const slug = "x)(www.evil.example!*'";
+    await openServerPage(page, 'self-hosted', 'oauth2', slug);
+    const card = page.getByTestId('share-server');
+    await card.getByRole('button', { name: 'Copy Markdown' }).click();
+    const md = await page.evaluate(() => navigator.clipboard.readText());
+
+    const links = [...md.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map((m) => m[1]);
+    expect(links).toHaveLength(4); // 2 images + 2 install links
+    const installLinks = links.filter((l) => /install-mcp|mcp\/install/.test(l));
+    expect(installLinks).toHaveLength(2);
+    for (const link of installLinks) {
+      expect(link).not.toMatch(/[()!*']/);
+      expect(md).toContain(`(${link})`);
+    }
+    const cursorUrl = new URL(installLinks.find((l) => l.startsWith('https://cursor.com/en/install-mcp'))!);
+    const vscodeUrl = new URL(installLinks.find((l) => l.startsWith('https://vscode.dev/redirect/mcp/install'))!);
+    expect(cursorUrl.searchParams.get('name')).toBe(slug);
+    expect(vscodeUrl.searchParams.get('name')).toBe(slug);
+    expect(JSON.parse(vscodeUrl.searchParams.get('config')!).name).toBe(slug);
+
+    // Preview badges link to the same https URLs that get shared.
+    const previewHrefs = await card.getByTestId('share-preview').getByRole('link').evaluateAll((els) => els.map((e) => e.getAttribute('href')));
+    expect(previewHrefs).toEqual(installLinks);
+  });
+
+  test('hides the Share card until the auth mode is known', async ({ page }) => {
+    await openServerPage(page, 'self-hosted', '');
+    await expect(page.getByTestId('share-server')).toHaveCount(0);
   });
 
   test('in-app Cursor and VS Code buttons keep their deep links', async ({ page }) => {

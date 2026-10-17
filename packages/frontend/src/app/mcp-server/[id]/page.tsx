@@ -18,6 +18,8 @@ import { INSPECTOR_URL, inspectorCommand } from '@/lib/inspector-url';
 import {
   cursorDeepLink as buildCursorDeepLink,
   vscodeDeepLink as buildVscodeDeepLink,
+  cursorInstallUrl,
+  vscodeInstallUrl,
   installBadgesHtml,
   installBadgesMarkdown,
   isLocalOnlyUrl,
@@ -812,13 +814,14 @@ Auth: OAuth`;
             </div>
           </details>
         </Card>
+        {mcpAuthMode && (
         <Card className="p-[22px]" data-testid="share-server">
           <div className="mb-[6px] text-sm font-semibold">Share this server</div>
           <p className="mb-[14px] text-[12px] text-[var(--text-3)]">
             Put one-click install badges in your team README, wiki or onboarding page.
             They contain only the MCP URL; whoever clicks still signs in.
           </p>
-          {!mcpAuthMode ? null : !badgesSupported ? (
+          {!badgesSupported ? (
             <p className="text-[12px] text-[var(--text-2)]" data-testid="share-oauth-required">
               One-click installs need OAuth: set <code className="rounded bg-[var(--surface-2)] px-1 font-mono">MCP_AUTH_MODE=oauth2</code> or <code className="rounded bg-[var(--surface-2)] px-1 font-mono">both</code>.
             </p>
@@ -836,18 +839,18 @@ Auth: OAuth`;
               {/* Local preview: styled links only, no remote images (offline installs). */}
               <div className="flex flex-wrap gap-2" data-testid="share-preview">
                 <a
-                  href={cursorDeepLink()}
+                  href={cursorInstallUrl(installTarget)}
                   className="inline-flex items-center overflow-hidden rounded-[6px] bg-[#0b1220] text-[12px] font-semibold text-white"
                 >
                   <span className="px-2 py-1">Cursor</span>
                   <span className="bg-[#1f2937] px-2 py-1">Add to Cursor</span>
                 </a>
                 <a
-                  href={vscodeDeepLink()}
+                  href={vscodeInstallUrl(installTarget)}
                   className="inline-flex items-center overflow-hidden rounded-[6px] bg-[#0b1220] text-[12px] font-semibold text-white"
                 >
                   <span className="px-2 py-1">VS Code</span>
-                  <span className="bg-[#0098FF] px-2 py-1">Install MCP server</span>
+                  <span className="bg-[#0066CC] px-2 py-1">Add to VS Code</span>
                 </a>
               </div>
               <div className="flex gap-2">
@@ -864,10 +867,11 @@ Auth: OAuth`;
                   {copied === 'badge-html' ? 'Copied!' : 'Copy HTML'}
                 </button>
               </div>
-              {codeBlock(badgesMarkdown, 'Markdown')}
+              <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-[10px] bg-[#0c0f16] p-[13px] font-mono text-[12px] leading-[1.6] text-[#cdd6e8]">{badgesMarkdown}</pre>
             </div>
           )}
         </Card>
+        )}
         </aside>
 
         {/* Connect Modal */}

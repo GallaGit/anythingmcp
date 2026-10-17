@@ -44,21 +44,28 @@ export function vscodeDeepLink(target: McpInstallTarget): string {
   return `vscode:mcp/install?${encodeURIComponent(vscodeConfig(target))}`;
 }
 
+// encodeURIComponent leaves ( ) ! * ' alone; a raw ")" would end a Markdown
+// link early, so the https install URLs encode them too.
+function encodeQueryValue(text: string): string {
+  return encodeURIComponent(text).replace(/[()!*']/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+}
+
 export function cursorInstallUrl(target: McpInstallTarget): string {
-  return `https://cursor.com/en/install-mcp?name=${encodeURIComponent(target.name)}&config=${encodeURIComponent(cursorConfig(target))}`;
+  return `https://cursor.com/en/install-mcp?name=${encodeQueryValue(target.name)}&config=${encodeQueryValue(cursorConfig(target))}`;
 }
 
 export function vscodeInstallUrl(target: McpInstallTarget): string {
-  return `https://vscode.dev/redirect/mcp/install?name=${encodeURIComponent(target.name)}&config=${encodeURIComponent(vscodeConfig(target))}`;
+  return `https://vscode.dev/redirect/mcp/install?name=${encodeQueryValue(target.name)}&config=${encodeQueryValue(vscodeConfig(target))}`;
 }
 
 // Remote badge images. Only ever placed in the copied snippet, never loaded
 // by the app itself (self-hosted instances may run fully offline).
 // Cursor documents an official button; VS Code does not, so it uses a
-// shields.io static badge in the README's style.
+// shields.io static badge in the README's style. #0066CC keeps white text
+// at 5.57:1 contrast (WCAG AA).
 export const CURSOR_BADGE_IMAGE = 'https://cursor.com/deeplink/mcp-install-dark.svg';
 export const VSCODE_BADGE_IMAGE =
-  'https://img.shields.io/badge/VS_Code-Install_MCP_server-0098FF?logo=visualstudiocode&logoColor=white&labelColor=0b1220';
+  'https://img.shields.io/badge/VS_Code-Add_to_VS_Code-0066CC?logo=visualstudiocode&logoColor=white&labelColor=0b1220';
 
 const CURSOR_ALT = 'Add to Cursor';
 const VSCODE_ALT = 'Add to VS Code';
