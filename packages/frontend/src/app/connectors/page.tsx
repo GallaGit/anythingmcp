@@ -92,19 +92,6 @@ const SUPPORTED_TYPES = [
 ];
 
 
-/** Wrap a pasted JSON connector or array in the export envelope; leave anything else as is. */
-function wrapBareJson(text: string): string {
-  try {
-    const parsed = JSON.parse(text);
-    if (parsed && typeof parsed === 'object' && !('connectors' in parsed)) {
-      return JSON.stringify({ connectors: Array.isArray(parsed) ? parsed : [parsed] });
-    }
-  } catch {
-    // Not JSON: YAML, sent as typed.
-  }
-  return text;
-}
-
 export default function ConnectorsPage() {
   const { token } = useAuth();
   const [list, setList] = useState<any[]>([]);
@@ -181,7 +168,7 @@ export default function ConnectorsPage() {
     try {
       // JSON or YAML: the server parses and validates the file. A bare JSON
       // connector or array (accepted here before) is wrapped as before.
-      const result = await connectors.importFile(wrapBareJson(importJson), token);
+      const result = await connectors.importFile(importJson, token);
       // Per-connector failures (a trial limit, an invalid row) come back in
       // `errors` with a 201, so show them rather than only the counts.
       setMsg(
