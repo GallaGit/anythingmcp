@@ -63,6 +63,7 @@ import {
   type StoredDynamicClient,
 } from './mcp-oauth-settings';
 import { mcpPathOf } from './mcp-connector-config.util';
+import { toExportEnvelope } from './connector-export.util';
 import { catalogMcpToolsFor } from '../adapters/mcp-adapter.util';
 import { interpolateDeep, interpolateString } from '../common/env-interpolation.util';
 import { resolveMcpEndpointUrl } from '../common/url.util';
@@ -959,41 +960,7 @@ export class ConnectorsController {
       where: { organizationId: req.user.organizationId },
       include: { tools: true },
     });
-    const includeSecrets = req.user.role === 'ADMIN';
-
-    const exportData = allConnectors.map((c) => {
-      const masked = includeSecrets ? null : toPublicConnector(c);
-      return {
-        name: c.name,
-        type: c.type,
-        baseUrl: c.baseUrl,
-        isActive: c.isActive,
-        authType: c.authType,
-        specUrl: c.specUrl,
-        headers: masked ? masked.headers : c.headers,
-        config: c.config,
-        envVars: masked ? masked.envVars : c.envVars,
-        ...(masked
-          ? { maskedEnvVars: masked.maskedEnvVars, maskedHeaders: masked.maskedHeaders }
-          : {}),
-        tools: c.tools.map((t) => ({
-          name: t.name,
-          description: t.description,
-          isEnabled: t.isEnabled,
-          parameters: t.parameters,
-          endpointMapping: t.endpointMapping,
-          responseMapping: t.responseMapping,
-          outputSchema: t.outputSchema,
-        })),
-      };
-    });
-
-    return {
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      secretsIncluded: includeSecrets,
-      connectors: exportData,
-    };
+    return toExportEnvelope(allConnectors, req.user.role === 'ADMIN');
   }
 
   @Get(':id')
@@ -1604,6 +1571,15 @@ export class ConnectorsController {
       return { error: 'Provide a "connectors" array with at least one connector' };
     }
 
+    return this.importConnectors(body, req);
+  }
+
+  /**
+   * Create the connectors of an export file in the caller's organization.
+   * Shared by import-all and import; the target organization and owner
+   * always come from the request, never from the file.
+   */
+  private async importConnectors(body: ImportAllDto, req: any) {
     const results = { created: 0, skipped: 0, tools: 0, errors: [] as string[] };
     const moves: SecretMoveSummary[] = [];
 
