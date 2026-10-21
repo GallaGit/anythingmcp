@@ -1,3 +1,4 @@
+import * as yaml from 'js-yaml';
 import { toPublicConnector } from './connector-secrets.util';
 
 /** Version written into every export envelope (export-all and :id/export). */
@@ -44,4 +45,31 @@ export function toExportEnvelope(connectors: any[], includeSecrets: boolean) {
     secretsIncluded: includeSecrets,
     connectors: connectors.map((c) => toExportEntry(c, includeSecrets)),
   };
+}
+
+export type ExportFormat = 'json' | 'yaml';
+export const EXPORT_FORMATS: readonly ExportFormat[] = ['json', 'yaml'];
+
+/**
+ * Serialise an export envelope. YAML uses the core schema, so a timestamp
+ * such as `exportedAt` reads back as a string, and never emits anchors.
+ */
+export function serializeExport(data: unknown, format: ExportFormat): string {
+  if (format === 'yaml') {
+    return yaml.dump(data, { schema: yaml.CORE_SCHEMA, noRefs: true, lineWidth: -1 });
+  }
+  return JSON.stringify(data, null, 2);
+}
+
+/** `<slug>.anythingmcp.<ext>`, ASCII only, safe inside a quoted header value. */
+export function exportFileName(connectorName: string, format: ExportFormat): string {
+  const slug =
+    String(connectorName ?? '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80) || 'connector';
+  return `${slug}.anythingmcp.${format === 'yaml' ? 'yaml' : 'json'}`;
 }

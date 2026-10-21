@@ -9,11 +9,14 @@ import {
   Param,
   Query,
   Req,
+  Res,
   UseGuards,
   Logger,
   ForbiddenException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { PaginationQueryDto } from '../common/pagination.dto';
@@ -63,7 +66,13 @@ import {
   type StoredDynamicClient,
 } from './mcp-oauth-settings';
 import { mcpPathOf } from './mcp-connector-config.util';
-import { toExportEnvelope } from './connector-export.util';
+import {
+  EXPORT_FORMATS,
+  exportFileName,
+  serializeExport,
+  toExportEnvelope,
+  type ExportFormat,
+} from './connector-export.util';
 import { catalogMcpToolsFor } from '../adapters/mcp-adapter.util';
 import { interpolateDeep, interpolateString } from '../common/env-interpolation.util';
 import { resolveMcpEndpointUrl } from '../common/url.util';
@@ -961,6 +970,48 @@ export class ConnectorsController {
       include: { tools: true },
     });
     return toExportEnvelope(allConnectors, req.user.role === 'ADMIN');
+  }
+
+  @Get(':id/export')
+  @ApiOperation({
+    summary: 'Export one connector and its tools as a JSON or YAML file',
+    description:
+      'Same file format as export-all, with a single entry in `connectors`, ' +
+      'so it can be restored with import-all or import. authConfig is never ' +
+      'exported. Secret environment variables and headers are exported only ' +
+      'to admins; for every other role they are left empty and named in ' +
+      '`maskedEnvVars` / `maskedHeaders`.',
+  })
+  @ApiQuery({ name: 'format', required: false, enum: ['json', 'yaml'] })
+  async exportOne(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('format') format: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const fmt = (format ?? 'json').toLowerCase() as ExportFormat;
+    if (!EXPORT_FORMATS.includes(fmt)) {
+      throw new BadRequestException('format must be "json" or "yaml"');
+    }
+    const connector = await this.prisma.connector.findFirst({
+      where: { id },
+      include: { tools: true },
+    });
+    if (!connector) {
+      throw new NotFoundException('Connector not found');
+    }
+    this.assertOrgMatch(connector, req);
+
+    const data = toExportEnvelope([connector], req.user.role === 'ADMIN');
+    res.setHeader(
+      'Content-Type',
+      fmt === 'yaml' ? 'application/yaml; charset=utf-8' : 'application/json; charset=utf-8',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${exportFileName(connector.name, fmt)}"`,
+    );
+    return serializeExport(data, fmt);
   }
 
   @Get(':id')
