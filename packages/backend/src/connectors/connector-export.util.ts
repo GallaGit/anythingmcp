@@ -1,4 +1,5 @@
 import * as yaml from 'js-yaml';
+import { BadRequestException } from '@nestjs/common';
 import { toPublicConnector } from './connector-secrets.util';
 
 /** Version written into every export envelope (export-all and :id/export). */
@@ -72,4 +73,32 @@ export function exportFileName(connectorName: string, format: ExportFormat): str
       .replace(/^-+|-+$/g, '')
       .slice(0, 80) || 'connector';
   return `${slug}.anythingmcp.${format === 'yaml' ? 'yaml' : 'json'}`;
+}
+
+/** Upper bound for an import file, well inside the 10 MB body limit. */
+export const IMPORT_FILE_MAX_CHARS = 5_000_000;
+
+/**
+ * Parse an import file. JSON is valid YAML, so one parser reads both. The
+ * core schema keeps dates as strings and has no custom tags. A syntax error
+ * becomes a 400 naming the line and column.
+ */
+export function parseImportFile(content: string): Record<string, unknown> {
+  let parsed: unknown;
+  try {
+    parsed = yaml.load(content, { schema: yaml.CORE_SCHEMA });
+  } catch (err: unknown) {
+    if (err instanceof yaml.YAMLException) {
+      const mark = err.mark;
+      const where = mark ? ` at line ${mark.line + 1}, column ${mark.column + 1}` : '';
+      throw new BadRequestException(`Invalid file${where}: ${err.reason}`);
+    }
+    throw new BadRequestException('Invalid file: could not be parsed');
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new BadRequestException(
+      'Invalid file: expected an object with a "connectors" array, as written by export',
+    );
+  }
+  return parsed as Record<string, unknown>;
 }

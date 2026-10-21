@@ -15,6 +15,7 @@ import {
   ForbiddenException,
   BadRequestException,
   NotFoundException,
+  ValidationPipe,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -31,6 +32,7 @@ import {
   IsIn,
   ValidateNested,
   ArrayMinSize,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ConnectorType, AuthType } from '../generated/prisma/client';
@@ -68,7 +70,9 @@ import {
 import { mcpPathOf } from './mcp-connector-config.util';
 import {
   EXPORT_FORMATS,
+  IMPORT_FILE_MAX_CHARS,
   exportFileName,
+  parseImportFile,
   serializeExport,
   toExportEnvelope,
   type ExportFormat,
@@ -591,6 +595,28 @@ class ImportAllDto {
   @IsBoolean()
   secretsIncluded?: boolean;
 }
+
+class ImportFileDto {
+  @ApiProperty({
+    description:
+      'Contents of a file written by export-all or :id/export, JSON or YAML. ' +
+      'Parsed with the YAML core schema (JSON is a subset of it).',
+    example: 'version: "1.0"\nconnectors:\n  - name: Acme CRM\n    type: REST\n    baseUrl: https://api.acme.test\n',
+  })
+  @IsString()
+  @MaxLength(IMPORT_FILE_MAX_CHARS)
+  content: string;
+}
+
+/**
+ * The same pipe main.ts registers globally, run on the parsed file so a YAML
+ * import is validated exactly like a JSON body sent to import-all.
+ */
+const importFilePipe = new ValidationPipe({
+  transform: true,
+  whitelist: true,
+  forbidNonWhitelisted: true,
+});
 
 class UpdateEnvVarsDto {
   @ApiProperty({
@@ -1622,6 +1648,27 @@ export class ConnectorsController {
       return { error: 'Provide a "connectors" array with at least one connector' };
     }
 
+    return this.importConnectors(body, req);
+  }
+
+  @Post('import')
+  @ApiOperation({
+    summary: 'Import connectors from an exported JSON or YAML file',
+    description:
+      'Takes the text of a file written by export-all or :id/export, in JSON ' +
+      'or YAML, and imports it like import-all: into the caller\'s ' +
+      'organization only, skipping connectors with duplicate names, never ' +
+      'restoring auth credentials. Not to be confused with POST :id/import, ' +
+      'which imports tools from an API spec into an existing connector.',
+  })
+  async importFile(@Req() req: any, @Body() dto: ImportFileDto) {
+    this.assertCanCreate(req);
+    const parsed = parseImportFile(dto.content);
+    const body: ImportAllDto = await importFilePipe.transform(parsed, {
+      type: 'body',
+      metatype: ImportAllDto,
+      data: '',
+    });
     return this.importConnectors(body, req);
   }
 
