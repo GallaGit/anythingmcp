@@ -81,7 +81,8 @@ export const IMPORT_FILE_MAX_CHARS = 5_000_000;
 /**
  * Parse an import file. JSON is valid YAML, so one parser reads both. The
  * core schema keeps dates as strings and has no custom tags. A syntax error
- * becomes a 400 naming the line and column.
+ * becomes a 400 naming the line and column. A bare connector object or array
+ * is wrapped in the export envelope, so it is then validated like any file.
  */
 export function parseImportFile(content: string): Record<string, unknown> {
   let parsed: unknown;
@@ -95,10 +96,18 @@ export function parseImportFile(content: string): Record<string, unknown> {
     }
     throw new BadRequestException('Invalid file: could not be parsed');
   }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+  if (Array.isArray(parsed)) {
+    // A bare array of connectors: wrap it in the export envelope.
+    return { connectors: parsed };
+  }
+  if (!parsed || typeof parsed !== 'object') {
     throw new BadRequestException(
       'Invalid file: expected an object with a "connectors" array, as written by export',
     );
+  }
+  if (!('connectors' in parsed)) {
+    // A bare connector object: wrap it in the export envelope.
+    return { connectors: [parsed] };
   }
   return parsed as Record<string, unknown>;
 }

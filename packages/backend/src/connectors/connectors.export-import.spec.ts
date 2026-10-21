@@ -295,6 +295,41 @@ describe('POST import', () => {
     expect(err.message).toMatch(/at line \d+, column \d+/);
   });
 
+  it.each(['json', 'yaml'] as const)(
+    'accepts a bare connector object in a %s file',
+    async (format) => {
+      const { text } = await exportText(format);
+      const bare = parse(text, format).connectors[0];
+      const content = format === 'json' ? JSON.stringify(bare) : yaml.dump(bare);
+      const { result } = await importText(content);
+      expect(result.created).toBe(1);
+    },
+  );
+
+  it.each(['json', 'yaml'] as const)(
+    'accepts a bare array of connectors in a %s file',
+    async (format) => {
+      const { text } = await exportText(format);
+      const bare = parse(text, format).connectors;
+      const content = format === 'json' ? JSON.stringify(bare) : yaml.dump(bare);
+      const { result } = await importText(content);
+      expect(result.created).toBe(1);
+    },
+  );
+
+  it.each(['json', 'yaml'] as const)(
+    'rejects an unknown property in a bare %s connector',
+    async (format) => {
+      const { text } = await exportText(format);
+      const bare = parse(text, format).connectors[0];
+      bare.tools[0].useProxy = true;
+      const content = format === 'json' ? JSON.stringify(bare) : yaml.dump(bare);
+      const err: any = await importText(content).catch((e) => e);
+      expect(err).toBeInstanceOf(BadRequestException);
+      expect(JSON.stringify(err.getResponse())).toContain('useProxy');
+    },
+  );
+
   it.each(['42', '- a\n- b', '""'])('rejects a file that is not an object: %j', async (content) => {
     await expect(importText(content)).rejects.toThrow(BadRequestException);
   });
