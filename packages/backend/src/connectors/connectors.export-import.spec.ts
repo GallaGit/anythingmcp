@@ -330,6 +330,51 @@ describe('POST import', () => {
     },
   );
 
+  it('rejects a billion-laughs style alias bomb with 400, quickly', async () => {
+    const levels = ['l0: &l0 [x, x, x, x, x, x, x, x, x, x]'];
+    for (let i = 1; i <= 6; i++) {
+      levels.push(`l${i}: &l${i} [${Array(10).fill(`*l${i - 1}`).join(', ')}]`);
+    }
+    const content = `name: Bomb\ntype: REST\nbaseUrl: https://x.test\nconfig:\n${levels
+      .map((l) => `  ${l}`)
+      .join('\n')}\n`;
+    const started = Date.now();
+    const err: any = await importText(content).catch((e) => e);
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect(err.message).toMatch(/aliases/);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it('rejects a self-referencing anchor with 400, not a stack overflow', async () => {
+    const content = 'name: Loop\ntype: REST\nbaseUrl: https://x.test\nconfig: &c\n  self: *c\n';
+    const err: any = await importText(content).catch((e) => e);
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect(err.message).toMatch(/aliases/);
+  });
+
+  it('turns number and boolean envVars and headers into strings', async () => {
+    const { text } = await exportText('yaml');
+    const file = parse(text, 'yaml');
+    file.connectors[0].envVars = { PORT: 5432, DEBUG: true, NAME: 'db' };
+    file.connectors[0].headers = { 'X-Version': 2 };
+    const content = yaml.dump(file);
+    expect(content).toContain('PORT: 5432');
+    const { result, prisma } = (await importText(content)) as any;
+    expect(result.created).toBe(1);
+    const data = prisma.connector.create.mock.calls[0][0].data;
+    expect(data.envVars).toEqual({ PORT: '5432', DEBUG: 'true', NAME: 'db' });
+    expect(data.headers).toEqual({ 'X-Version': '2' });
+  });
+
+  it('rejects an object value in envVars with 400', async () => {
+    const { text } = await exportText('yaml');
+    const file = parse(text, 'yaml');
+    file.connectors[0].envVars = { NESTED: { a: 1 } };
+    const err: any = await importText(yaml.dump(file)).catch((e) => e);
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect(err.message).toContain('envVars.NESTED');
+  });
+
   it.each(['42', '- a\n- b', '""'])('rejects a file that is not an object: %j', async (content) => {
     await expect(importText(content)).rejects.toThrow(BadRequestException);
   });

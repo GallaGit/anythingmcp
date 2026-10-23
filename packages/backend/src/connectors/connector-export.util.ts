@@ -96,6 +96,66 @@ export function parseImportFile(content: string): Record<string, unknown> {
     }
     throw new BadRequestException('Invalid file: could not be parsed');
   }
+  assertNoSharedReferences(parsed);
+  const file = wrapEnvelope(parsed);
+  if (Array.isArray(file.connectors)) {
+    file.connectors.forEach((c: unknown, i: number) => normalizeStringMaps(c, i));
+  }
+  return file;
+}
+
+/**
+ * Reject a file in which one object or array is reached twice. Export never
+ * writes YAML anchors (`noRefs`), so a repeated reference can only come from a
+ * hand-written alias: an alias bomb (`&a [*b, *b, ...]`) that would expand
+ * exponentially later on, or a self reference (`&c {self: *c}`) that would
+ * recurse without end. Each node is visited at most once, and the seen check
+ * comes before descending, so the walk is linear and always terminates.
+ */
+function assertNoSharedReferences(root: unknown): void {
+  const seen = new Set<object>();
+  const stack: unknown[] = [root];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node || typeof node !== 'object') continue;
+    if (seen.has(node)) {
+      throw new BadRequestException(
+        'Invalid file: YAML aliases that repeat or reference an object are not supported',
+      );
+    }
+    seen.add(node);
+    for (const value of Array.isArray(node) ? node : Object.values(node)) {
+      if (value && typeof value === 'object') stack.push(value);
+    }
+  }
+}
+
+/**
+ * envVars and headers are string maps. A hand-edited YAML file may write
+ * `PORT: 5432` or `ENABLED: true`; such numbers and booleans become strings.
+ * An object or array value is rejected with a 400 naming the key.
+ */
+function normalizeStringMaps(connector: unknown, index: number): void {
+  if (!connector || typeof connector !== 'object' || Array.isArray(connector)) return;
+  const c = connector as Record<string, unknown>;
+  for (const field of ['envVars', 'headers'] as const) {
+    const map = c[field];
+    if (!map || typeof map !== 'object' || Array.isArray(map)) continue;
+    for (const [key, value] of Object.entries(map as Record<string, unknown>)) {
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        (map as Record<string, unknown>)[key] = String(value);
+      } else if (value !== null && typeof value === 'object') {
+        throw new BadRequestException(
+          `Invalid file: connectors[${index}].${field}.${key} must be a string, not an ${
+            Array.isArray(value) ? 'array' : 'object'
+          }`,
+        );
+      }
+    }
+  }
+}
+
+function wrapEnvelope(parsed: unknown): Record<string, any> {
   if (Array.isArray(parsed)) {
     // A bare array of connectors: wrap it in the export envelope.
     return { connectors: parsed };
@@ -109,5 +169,5 @@ export function parseImportFile(content: string): Record<string, unknown> {
     // A bare connector object: wrap it in the export envelope.
     return { connectors: [parsed] };
   }
-  return parsed as Record<string, unknown>;
+  return parsed as Record<string, any>;
 }
