@@ -88,7 +88,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
 /**
  * Fetch an export file as text, with the file name the server suggests.
- * `secretsIncluded` is read from the file itself (JSON or YAML envelope).
+ * `secretsIncluded` comes from the X-Secrets-Included response header.
  */
 async function downloadExport(
   path: string,
@@ -109,7 +109,7 @@ async function downloadExport(
     text,
     filename,
     contentType: response.headers.get('Content-Type') || 'application/octet-stream',
-    secretsIncluded: /(^|[{,\s])"?secretsIncluded"?\s*:\s*true\b/m.test(text),
+    secretsIncluded: response.headers.get('X-Secrets-Included') === 'true',
   };
 }
 

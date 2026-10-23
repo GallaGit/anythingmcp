@@ -1028,7 +1028,9 @@ export class ConnectorsController {
     }
     this.assertOrgMatch(connector, req);
 
-    const data = toExportEnvelope([connector], req.user.role === 'ADMIN');
+    const secretsIncluded = req.user.role === 'ADMIN';
+    const data = toExportEnvelope([connector], secretsIncluded);
+    res.setHeader('X-Secrets-Included', String(secretsIncluded));
     res.setHeader(
       'Content-Type',
       fmt === 'yaml' ? 'application/yaml; charset=utf-8' : 'application/json; charset=utf-8',
