@@ -91,7 +91,6 @@ const SUPPORTED_TYPES = [
   { type: 'DATABASE', label: 'Database' },
 ];
 
-
 export default function ConnectorsPage() {
   const { token } = useAuth();
   const [list, setList] = useState<any[]>([]);
