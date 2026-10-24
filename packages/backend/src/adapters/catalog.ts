@@ -21,6 +21,7 @@ import * as dynamicsNav from './de/dynamics-nav.json';
 import * as easybill from './de/easybill.json';
 import * as elo from './de/elo.json';
 import * as fastbill from './de/fastbill.json';
+import * as flour from './de/flour.json';
 import * as getmyinvoices from './de/getmyinvoices.json';
 import * as glsTracking from './de/gls-tracking.json';
 import * as handelsregister from './de/handelsregister.json';
@@ -42,6 +43,7 @@ import * as moco from './de/moco.json';
 import * as ninaWarnung from './de/nina-warnung.json';
 import * as openplz from './de/openplz.json';
 import * as openproject from './de/openproject.json';
+import * as ottoAds from './de/otto-ads.json';
 import * as ottoMarket from './de/otto-market.json';
 import * as oxomi from './de/oxomi.json';
 import * as paperlessNgx from './de/paperless-ngx.json';
@@ -49,6 +51,7 @@ import * as papershift from './de/papershift.json';
 import * as payone from './de/payone.json';
 import * as personio from './de/personio.json';
 import * as planradar from './de/planradar.json';
+import * as plentyone from './de/plentyone.json';
 import * as propstack from './de/propstack.json';
 import * as ready2order from './de/ready2order.json';
 import * as sage100 from './de/sage-100.json';
@@ -100,6 +103,7 @@ import * as asite from './intl/asite.json';
 import * as atera from './intl/atera.json';
 import * as atlassian from './intl/atlassian.json';
 import * as attio from './intl/attio.json';
+import * as auroraInbox from './intl/aurora-inbox.json';
 import * as autotask from './intl/autotask.json';
 import * as avito from './intl/avito.json';
 import * as aymakan from './intl/aymakan.json';
@@ -131,6 +135,7 @@ import * as calcom from './intl/calcom.json';
 import * as calendly from './intl/calendly.json';
 import * as canva from './intl/canva.json';
 import * as chargebee from './intl/chargebee.json';
+import * as chatwoot from './intl/chatwoot.json';
 import * as circleci from './intl/circleci.json';
 import * as claap from './intl/claap.json';
 import * as clearbit from './intl/clearbit.json';
@@ -167,6 +172,7 @@ import * as dropboxSign from './intl/dropbox-sign.json';
 import * as dynamics365BusinessCentral from './intl/dynamics365-business-central.json';
 import * as dynamics365Sales from './intl/dynamics365-sales.json';
 import * as easypost from './intl/easypost.json';
+import * as ebayBrowse from './intl/ebay-browse.json';
 import * as ebaySell from './intl/ebay-sell.json';
 import * as ecwid from './intl/ecwid.json';
 import * as egnyte from './intl/egnyte.json';
@@ -328,6 +334,7 @@ import * as nominatim from './intl/nominatim.json';
 import * as notion from './intl/notion.json';
 import * as novaPoshta from './intl/nova-poshta.json';
 import * as nutshellCrm from './intl/nutshell-crm.json';
+import * as ocrSpace from './intl/ocr-space.json';
 import * as oddsApi from './intl/odds-api.json';
 import * as odoo from './intl/odoo.json';
 import * as odooJsonrpc from './intl/odoo-jsonrpc.json';
@@ -337,6 +344,7 @@ import * as omnisend from './intl/omnisend.json';
 import * as onecEnterprise from './intl/onec-enterprise.json';
 import * as onesignal from './intl/onesignal.json';
 import * as openai from './intl/openai.json';
+import * as openrouteservice from './intl/openrouteservice.json';
 import * as opentable from './intl/opentable.json';
 import * as openweather from './intl/openweather.json';
 import * as oracle from './intl/oracle.json';
@@ -401,6 +409,7 @@ import * as savvycal from './intl/savvycal.json';
 import * as sealSubscriptions from './intl/seal-subscriptions.json';
 import * as seamlessAi from './intl/seamless-ai.json';
 import * as segment from './intl/segment.json';
+import * as sellauth from './intl/sellauth.json';
 import * as sellercloud from './intl/sellercloud.json';
 import * as semrush from './intl/semrush.json';
 import * as sendgrid from './intl/sendgrid.json';
@@ -412,6 +421,7 @@ import * as shippo from './intl/shippo.json';
 import * as shipstation from './intl/shipstation.json';
 import * as shopee from './intl/shopee.json';
 import * as shopify from './intl/shopify.json';
+import * as shoptet from './intl/shoptet.json';
 import * as shortcut from './intl/shortcut.json';
 import * as signwell from './intl/signwell.json';
 import * as slab from './intl/slab.json';
@@ -498,6 +508,7 @@ import * as zoom from './intl/zoom.json';
 import * as zoominfo from './intl/zoominfo.json';
 import * as digisac from './br/digisac.json';
 import * as mercadoLibre from './br/mercado-libre.json';
+import * as mercadoPago from './br/mercado-pago.json';
 import * as tiendanube from './br/tiendanube.json';
 import * as zApi from './br/z-api.json';
 import * as doubletick from './in/doubletick.json';
@@ -515,6 +526,7 @@ import * as holded from './es/holded.json';
 import * as quipu from './es/quipu.json';
 import * as axonaut from './fr/axonaut.json';
 import * as dolibarr from './fr/dolibarr.json';
+import * as frCompanyData from './fr/fr-company-data.json';
 import * as manomano from './fr/manomano.json';
 import * as octopia from './fr/octopia.json';
 import * as pennylane from './fr/pennylane.json';
@@ -539,6 +551,7 @@ import {
 } from '../connectors/odata/odata-builtins';
 import { computeAdapterVersion } from './catalog-fingerprint';
 import type { EnvVarMeta, SetupKind } from './env-var-meta';
+import type { SetupEffort, SetupGuide } from './setup-guide';
 
 export type VerifyHint = string | { hint: string; suggest?: string };
 
@@ -629,6 +642,11 @@ export interface AdapterMeta {
   checkBeforeAuthorization?: { path: string; headers?: Record<string, string> };
   /** What setting it up involves; filled in by the adapters API. */
   setupKind?: SetupKind;
+  /** What it takes, for the marketplace badge; filled in by the adapters API. */
+  setupEffort?: SetupEffort;
+  /** A step-by-step setup shown instead of the plain form (setup-guide.ts).
+   *  Served by GET /api/adapters/:slug only, not in the catalog listing. */
+  setupGuide?: SetupGuide;
 }
 
 export interface AdapterDefinition extends AdapterMeta {
@@ -772,6 +790,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   easybill as unknown as AdapterDefinition,
   elo as unknown as AdapterDefinition,
   fastbill as unknown as AdapterDefinition,
+  flour as unknown as AdapterDefinition,
   getmyinvoices as unknown as AdapterDefinition,
   glsTracking as unknown as AdapterDefinition,
   handelsregister as unknown as AdapterDefinition,
@@ -793,6 +812,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   ninaWarnung as unknown as AdapterDefinition,
   openplz as unknown as AdapterDefinition,
   openproject as unknown as AdapterDefinition,
+  ottoAds as unknown as AdapterDefinition,
   ottoMarket as unknown as AdapterDefinition,
   oxomi as unknown as AdapterDefinition,
   paperlessNgx as unknown as AdapterDefinition,
@@ -800,6 +820,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   payone as unknown as AdapterDefinition,
   personio as unknown as AdapterDefinition,
   planradar as unknown as AdapterDefinition,
+  plentyone as unknown as AdapterDefinition,
   propstack as unknown as AdapterDefinition,
   ready2order as unknown as AdapterDefinition,
   sage100 as unknown as AdapterDefinition,
@@ -851,6 +872,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   atera as unknown as AdapterDefinition,
   atlassian as unknown as AdapterDefinition,
   attio as unknown as AdapterDefinition,
+  auroraInbox as unknown as AdapterDefinition,
   autotask as unknown as AdapterDefinition,
   avito as unknown as AdapterDefinition,
   aymakan as unknown as AdapterDefinition,
@@ -882,6 +904,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   calendly as unknown as AdapterDefinition,
   canva as unknown as AdapterDefinition,
   chargebee as unknown as AdapterDefinition,
+  chatwoot as unknown as AdapterDefinition,
   circleci as unknown as AdapterDefinition,
   claap as unknown as AdapterDefinition,
   clearbit as unknown as AdapterDefinition,
@@ -918,6 +941,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   dynamics365BusinessCentral as unknown as AdapterDefinition,
   dynamics365Sales as unknown as AdapterDefinition,
   easypost as unknown as AdapterDefinition,
+  ebayBrowse as unknown as AdapterDefinition,
   ebaySell as unknown as AdapterDefinition,
   ecwid as unknown as AdapterDefinition,
   egnyte as unknown as AdapterDefinition,
@@ -1079,6 +1103,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   notion as unknown as AdapterDefinition,
   novaPoshta as unknown as AdapterDefinition,
   nutshellCrm as unknown as AdapterDefinition,
+  ocrSpace as unknown as AdapterDefinition,
   oddsApi as unknown as AdapterDefinition,
   odoo as unknown as AdapterDefinition,
   odooJsonrpc as unknown as AdapterDefinition,
@@ -1088,6 +1113,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   onecEnterprise as unknown as AdapterDefinition,
   onesignal as unknown as AdapterDefinition,
   openai as unknown as AdapterDefinition,
+  openrouteservice as unknown as AdapterDefinition,
   opentable as unknown as AdapterDefinition,
   openweather as unknown as AdapterDefinition,
   oracle as unknown as AdapterDefinition,
@@ -1152,6 +1178,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   sealSubscriptions as unknown as AdapterDefinition,
   seamlessAi as unknown as AdapterDefinition,
   segment as unknown as AdapterDefinition,
+  sellauth as unknown as AdapterDefinition,
   sellercloud as unknown as AdapterDefinition,
   semrush as unknown as AdapterDefinition,
   sendgrid as unknown as AdapterDefinition,
@@ -1163,6 +1190,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   shipstation as unknown as AdapterDefinition,
   shopee as unknown as AdapterDefinition,
   shopify as unknown as AdapterDefinition,
+  shoptet as unknown as AdapterDefinition,
   shortcut as unknown as AdapterDefinition,
   signwell as unknown as AdapterDefinition,
   slab as unknown as AdapterDefinition,
@@ -1249,6 +1277,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   zoominfo as unknown as AdapterDefinition,
   digisac as unknown as AdapterDefinition,
   mercadoLibre as unknown as AdapterDefinition,
+  mercadoPago as unknown as AdapterDefinition,
   tiendanube as unknown as AdapterDefinition,
   zApi as unknown as AdapterDefinition,
   doubletick as unknown as AdapterDefinition,
@@ -1266,6 +1295,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   quipu as unknown as AdapterDefinition,
   axonaut as unknown as AdapterDefinition,
   dolibarr as unknown as AdapterDefinition,
+  frCompanyData as unknown as AdapterDefinition,
   manomano as unknown as AdapterDefinition,
   octopia as unknown as AdapterDefinition,
   pennylane as unknown as AdapterDefinition,
