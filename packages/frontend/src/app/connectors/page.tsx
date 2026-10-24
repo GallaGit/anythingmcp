@@ -149,7 +149,8 @@ export default function ConnectorsPage() {
       a.href = url;
       a.download = `anythingmcp-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
-      URL.revokeObjectURL(url);
+      // Revoke later: some browsers start the download after click() returns.
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
       setMsg(
         data.secretsIncluded === false
           ? 'Configuration exported without secret values (only admins can export them)'

@@ -599,7 +599,8 @@ export default function ConnectorDetailPage() {
       a.href = url;
       a.download = file.filename;
       a.click();
-      URL.revokeObjectURL(url);
+      // Revoke later: some browsers start the download after click() returns.
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
       setMsg(
         file.secretsIncluded
           ? `Exported as ${format.toUpperCase()}. The file contains secret values in plain text: store it safely. OAuth credentials are not exported.`
