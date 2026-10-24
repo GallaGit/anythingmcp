@@ -1683,6 +1683,16 @@ export class ConnectorsController {
     const results = { created: 0, skipped: 0, tools: 0, errors: [] as string[] };
     const moves: SecretMoveSummary[] = [];
 
+    // Same base URL check as create and update, run for every connector
+    // before anything is written, so a bad file imports nothing.
+    body.connectors.forEach((c, i) => {
+      try {
+        this.assertUsableBaseUrl(c.baseUrl, c.type);
+      } catch (err: any) {
+        throw new BadRequestException(`connectors[${i}].baseUrl: ${err.message}`);
+      }
+    });
+
     for (const c of body.connectors) {
       // Connector names are not unique in the schema, so the P2002 branch
       // below never fired and restoring a backup twice doubled every

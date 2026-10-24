@@ -111,12 +111,32 @@ export function parseImportFile(content: string): Record<string, unknown> {
  * exponentially later on, or a self reference (`&c {self: *c}`) that would
  * recurse without end. Each node is visited at most once, and the seen check
  * comes before descending, so the walk is linear and always terminates.
+ *
+ * Strings are primitives, so an anchored string reused through aliases
+ * (`s: &s <100 KB>` then `[*s, *s, ...]`) is not caught by identity. The walk
+ * therefore also adds up the length of every string and object key it meets,
+ * once per place it appears, and stops as soon as the total passes
+ * IMPORT_FILE_MAX_CHARS: the size the file would have once its aliases are
+ * expanded.
  */
 function assertNoSharedReferences(root: unknown): void {
   const seen = new Set<object>();
   const stack: unknown[] = [root];
+  let expandedChars = 0;
+  const count = (chars: number) => {
+    expandedChars += chars;
+    if (expandedChars > IMPORT_FILE_MAX_CHARS) {
+      throw new BadRequestException(
+        `Invalid file: too large once YAML aliases are expanded (over ${IMPORT_FILE_MAX_CHARS} characters)`,
+      );
+    }
+  };
   while (stack.length > 0) {
     const node = stack.pop();
+    if (typeof node === 'string') {
+      count(node.length);
+      continue;
+    }
     if (!node || typeof node !== 'object') continue;
     if (seen.has(node)) {
       throw new BadRequestException(
@@ -124,8 +144,13 @@ function assertNoSharedReferences(root: unknown): void {
       );
     }
     seen.add(node);
-    for (const value of Array.isArray(node) ? node : Object.values(node)) {
-      if (value && typeof value === 'object') stack.push(value);
+    if (Array.isArray(node)) {
+      for (const value of node) stack.push(value);
+    } else {
+      for (const [key, value] of Object.entries(node)) {
+        count(key.length);
+        stack.push(value);
+      }
     }
   }
 }

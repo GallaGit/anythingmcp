@@ -352,6 +352,38 @@ describe('POST import', () => {
     expect(err.message).toMatch(/aliases/);
   });
 
+  it.each(['config', 'envVars', 'tool endpointMapping'])(
+    'rejects an anchored string repeated through aliases in %s with 400, quickly',
+    async (where) => {
+      const big = 'a'.repeat(100_000);
+      const refs = Array(60).fill('*s').join(', ');
+      const head = 'name: StrBomb\ntype: REST\nbaseUrl: https://x.test\n';
+      const content =
+        where === 'config'
+          ? `${head}config:\n  s: &s ${big}\n  list: [${refs}]\n`
+          : where === 'envVars'
+            ? `${head}config:\n  s: &s ${big}\nenvVars:\n${Array.from(
+                { length: 60 },
+                (_, i) => `  V${i}: *s`,
+              ).join('\n')}\n`
+            : `${head}config:\n  s: &s ${big}\ntools:\n  - name: t\n    endpointMapping:\n      method: GET\n      path: /x\n      queryParams: [${refs}]\n`;
+      const started = Date.now();
+      const err: any = await importText(content).catch((e) => e);
+      expect(err).toBeInstanceOf(BadRequestException);
+      expect(err.message).toMatch(/aliases are expanded/);
+      expect(Date.now() - started).toBeLessThan(2000);
+    },
+  );
+
+  it('rejects an unusable baseUrl with 400 naming the connector and imports nothing', async () => {
+    const { text } = await exportText('yaml');
+    const file = parse(text, 'yaml');
+    file.connectors[0].baseUrl = 'ftp://files.acme.test';
+    const err: any = await importText(yaml.dump(file)).catch((e) => e);
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect(err.message).toContain('connectors[0].baseUrl');
+  });
+
   it('turns number and boolean envVars and headers into strings', async () => {
     const { text } = await exportText('yaml');
     const file = parse(text, 'yaml');
