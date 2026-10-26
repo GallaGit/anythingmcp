@@ -271,6 +271,15 @@ live('home-assistant adapter: live', () => {
     expect(Array.isArray(b)).toBe(true);
   }, 30000);
 
+  it('get_logbook filtered by entity returns only that entity', async () => {
+    const id = process.env.HOME_ASSISTANT_LOGBOOK_ENTITY ?? entity;
+    const b = body(await call('home_assistant_get_logbook', { start_time: start, entity: id, period: 1 }, env));
+    expect(Array.isArray(b)).toBe(true);
+    // Set HOME_ASSISTANT_LOGBOOK_ENTITY to an entity that changed in the last few hours to require an entry.
+    if (process.env.HOME_ASSISTANT_LOGBOOK_ENTITY) expect(b.length).toBeGreaterThan(0);
+    for (const e of b) expect(e.entity_id).toBe(id);
+  }, 30000);
+
   it('list_calendars and get_calendar_events', async () => {
     const cals = body(await call('home_assistant_list_calendars', {}, env));
     expect(Array.isArray(cals)).toBe(true);
