@@ -54,6 +54,8 @@ cd anythingmcp && docker compose up -d
 
 **Timestamps** are ISO 8601 in UTC with a `Z` suffix, e.g. `2026-10-01T00:00:00Z`. An offset such as `+02:00` puts a `+` into the URL, so convert to UTC first.
 
+**Response size:** Home Assistant's raw `/api/states` is large (about 60 KB for the 123 entities of the built-in demo), so `home_assistant_list_states` keeps only five fields per entity (about 19 KB for the same demo). Use `home_assistant_get_state` when you need one entity's attributes.
+
 ## Privacy
 
 Home data reveals who is at home and daily routines. Assign this connector only to MCP servers whose users may see this household's data.

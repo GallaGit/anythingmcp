@@ -224,18 +224,58 @@ describe('home-assistant adapter: static spec conformance', () => {
 const live = process.env.RUN_HOME_ASSISTANT_LIVE === '1' && process.env.HOME_ASSISTANT_URL && process.env.HOME_ASSISTANT_TOKEN ? describe : describe.skip;
 live('home-assistant adapter: live', () => {
   const env = { HOME_ASSISTANT_URL: process.env.HOME_ASSISTANT_URL!, HOME_ASSISTANT_TOKEN: process.env.HOME_ASSISTANT_TOKEN! };
+  const body = (res: any) => (res && typeof res === 'object' && 'data' in res ? res.data : res);
+  const utc = (offsetMs: number) => new Date(Date.now() + offsetMs).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const start = utc(-6 * 3600e3);
   beforeAll(() => mockedAxios.mockImplementation((cfg: any) => (mockedAxios.__actual as any).request(cfg)));
-  it('GET /api/config answers with the version and time zone', async () => {
-    const res = await call('home_assistant_get_config', {}, env);
-    const body = res.data ?? res;
-    expect(body.version).toBeTruthy();
-    expect(body.time_zone).toBeTruthy();
+
+  it('the healthcheck path "/" reaches GET /api/ (the trailing slash matters)', async () => {
+    const { config } = interpolateConnectorConfig({ baseUrl: a.connector.baseUrl, headers: a.connector.headers }, { method: 'GET', path: '/' }, env);
+    const res = await new RestEngine({} as OAuth2TokenService, {} as LoginTokenService).execute(
+      { baseUrl: config.baseUrl, authType: a.connector.authType, authConfig: interpolateDeep(a.connector.authConfig, env), headers: config.headers } as any,
+      { method: 'GET', path: a.connector.healthcheckPath! },
+      {},
+    );
+    expect(body(res)).toEqual({ message: 'API running.' });
   }, 30000);
-  it('GET /api/states lists entities', async () => {
-    const res = await call('home_assistant_list_states', {}, env);
-    const rows = applyResponseTransform(res.data ?? res, tool('home_assistant_list_states').responseMapping as any).value as any[];
-    expect(Array.isArray(rows)).toBe(true);
+
+  it('get_config answers with the version and time zone', async () => {
+    const b = body(await call('home_assistant_get_config', {}, env));
+    expect(b.version).toBeTruthy();
+    expect(b.time_zone).toBeTruthy();
+  }, 30000);
+
+  let entity = '';
+  it('list_states lists entities, shaped to compact rows', async () => {
+    const rows = applyResponseTransform(body(await call('home_assistant_list_states', {}, env)), tool('home_assistant_list_states').responseMapping as any).value as any[];
     expect(rows.length).toBeGreaterThan(0);
-    expect(rows[0].entity_id).toMatch(/\./);
+    expect(Object.keys(rows[0]).sort()).toEqual(['entity_id', 'last_changed', 'name', 'state', 'unit']);
+    entity = (rows.find((r) => r.entity_id.startsWith('sensor.')) ?? rows[0]).entity_id;
+  }, 30000);
+
+  it('get_state returns one entity with attributes', async () => {
+    const b = body(await call('home_assistant_get_state', { entity_id: entity }, env));
+    expect(b.entity_id).toBe(entity);
+    expect(b.attributes).toBeDefined();
+  }, 30000);
+
+  it('get_history with a Z timestamp returns one list per entity, without attributes', async () => {
+    const b = body(await call('home_assistant_get_history', { start_time: start, filter_entity_id: entity }, env));
+    expect(Array.isArray(b)).toBe(true);
+    expect(b[0][0].entity_id).toBe(entity);
+    for (const s of b[0]) expect(s.attributes ?? {}).toEqual({});
+  }, 30000);
+
+  it('get_logbook returns a list', async () => {
+    const b = body(await call('home_assistant_get_logbook', { start_time: start, period: 1 }, env));
+    expect(Array.isArray(b)).toBe(true);
+  }, 30000);
+
+  it('list_calendars and get_calendar_events', async () => {
+    const cals = body(await call('home_assistant_list_calendars', {}, env));
+    expect(Array.isArray(cals)).toBe(true);
+    if (!cals.length) return;
+    const events = body(await call('home_assistant_get_calendar_events', { entity_id: cals[0].entity_id, start, end: utc(7 * 24 * 3600e3) }, env));
+    expect(Array.isArray(events)).toBe(true);
   }, 30000);
 });
