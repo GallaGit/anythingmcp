@@ -422,6 +422,7 @@ import * as kasta from './intl/kasta.json';
 import * as keycrm from './intl/keycrm.json';
 import * as kieAi from './intl/kie-ai.json';
 import * as kittl from './intl/kittl.json';
+import * as klarna from './intl/klarna.json';
 import * as klaviyo from './intl/klaviyo.json';
 import * as kohls from './intl/kohls.json';
 import * as kommo from './intl/kommo.json';
@@ -1698,6 +1699,7 @@ const RAW_ADAPTERS: AdapterDefinition[] = [
   keycrm as unknown as AdapterDefinition,
   kieAi as unknown as AdapterDefinition,
   kittl as unknown as AdapterDefinition,
+  klarna as unknown as AdapterDefinition,
   klaviyo as unknown as AdapterDefinition,
   kohls as unknown as AdapterDefinition,
   kommo as unknown as AdapterDefinition,

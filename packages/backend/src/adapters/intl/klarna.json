@@ -1,0 +1,212 @@
+{
+  "slug": "klarna",
+  "name": "Klarna",
+  "aliases": [
+    "Klarna Payments",
+    "Klarna Order Management",
+    "Klarna Settlements"
+  ],
+  "description": "Read Klarna merchant orders and settlement payouts from any AI agent: one order with captures and refunds, list payouts by date, and list settlement transactions by payout or order. HTTP Basic auth, Europe / North America / Oceania, live or Playground.",
+  "instructions": "## Klarna\nThis connector talks to Klarna's **Order Management API** and **Settlements API** on the host you pick in `KLARNA_API_URL` (Europe, North America or Oceania; live or Playground). It is **read-only**: it never captures, refunds, cancels or changes an order.\n\n**Setup (about 5 minutes)**\n1. Sign in to the Klarna Merchant Portal for the environment you want (Playground for tests, live for production).\n2. Create an API credential. Klarna shows a **username** (often a UUID) and a **password** / API key once; copy them into `KLARNA_USERNAME` and `KLARNA_PASSWORD`.\n3. Set `KLARNA_API_URL` to the host that matches that credential's region and environment (see the Environment options). A Playground key only works on a `*.playground.klarna.com` host; a live key only on a live host.\n\n**Authentication**: HTTP Basic with the Merchant Portal username and password. The connector sends them as `Authorization: Basic …` on every call.\n\n**Where to start**\n- One order: `klarna_get_order` with Klarna's `order_id` (not your shop number; that is `merchant_reference1` on the order). Returns status, amounts (authorized / captured / refunded / remaining), expiry, lines, captures and refunds. Amounts are integers in **minor units** (10000 = 100.00 of the currency).\n- Money that hit the bank: `klarna_list_payouts` for a date range (and optional currency), then `klarna_list_transactions` with each payout's `payment_reference` (or with an `order_id`) for the SALE / FEE / RETURN lines.\n\n**Dates and paging**: settlement `start_date` / `end_date` are ISO-8601 date-times; a bare date means midnight, so use e.g. `2026-09-30T23:59:59Z` to include that day. `klarna_list_transactions` has **no date filter** in Klarna's API: list payouts for the period first, then pass each `payment_reference`. Both list tools page with `size` (default 20) and `offset`.\n\n**Limits**: read-only here. Captures, refunds, cancels, dispute handling and payment-session creation stay in the Merchant Portal or another connector. 401 means the username/password or host is wrong for that credential; 404 means no such order or payout in this account.",
+  "region": "intl",
+  "category": "payments",
+  "icon": "klarna",
+  "docsUrl": "https://docs.klarna.com/acquirer/klarna/api/ordermanagement/",
+  "prerequisites": "A Klarna merchant account and an API credential (username and password) from the Merchant Portal for the region and environment you will use. About 5 minutes.",
+  "requiredEnvVars": [
+    "KLARNA_API_URL",
+    "KLARNA_USERNAME",
+    "KLARNA_PASSWORD"
+  ],
+  "envVarMeta": {
+    "KLARNA_API_URL": {
+      "label": "Environment",
+      "kind": "address",
+      "help": "Klarna host for your merchant region's live or Playground API. The credential must belong to the same environment.",
+      "example": "https://api.playground.klarna.com",
+      "link": "https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/api-urls/",
+      "pattern": "^https://api(-na|-oc)?(\\.(playground))?\\.klarna\\.com$",
+      "patternMessage": "Pick one of Klarna's six API hosts (EU / NA / OC, live or Playground), without a trailing slash.",
+      "options": [
+        {
+          "value": "https://api.klarna.com",
+          "label": "Europe (live)"
+        },
+        {
+          "value": "https://api-na.klarna.com",
+          "label": "North America (live)"
+        },
+        {
+          "value": "https://api-oc.klarna.com",
+          "label": "Oceania (live)"
+        },
+        {
+          "value": "https://api.playground.klarna.com",
+          "label": "Europe (Playground)"
+        },
+        {
+          "value": "https://api-na.playground.klarna.com",
+          "label": "North America (Playground)"
+        },
+        {
+          "value": "https://api-oc.playground.klarna.com",
+          "label": "Oceania (Playground)"
+        }
+      ]
+    },
+    "KLARNA_USERNAME": {
+      "label": "API username",
+      "kind": "credential",
+      "help": "Merchant Portal → Settings → API credentials: the username shown next to the API key (often a UUID).",
+      "link": "https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/authentication/",
+      "pattern": "^\\S{8,200}$",
+      "patternMessage": "Paste the API username only, without spaces."
+    },
+    "KLARNA_PASSWORD": {
+      "label": "API password",
+      "kind": "credential",
+      "secret": true,
+      "help": "Merchant Portal → Settings → API credentials: the API key / password shown when the credential was created.",
+      "link": "https://docs.klarna.com/acquirer/klarna/get-started/integration-resilience/authentication/",
+      "pattern": "^\\S{8,500}$",
+      "patternMessage": "Paste the API password / key only, without spaces."
+    }
+  },
+  "verifyHints": {
+    "401": "Klarna refused the username or password. Copy them again from the Merchant Portal and check that KLARNA_API_URL matches the credential (Playground keys only on *.playground.klarna.com, live keys only on the live hosts).",
+    "403": "This API credential is not allowed to call this endpoint. Create a credential with Order Management and Settlements access in the Merchant Portal.",
+    "404": "Klarna found no order or payout with that id in this account. Order ids are Klarna's own ids, not your shop's order number.",
+    "auth_failed": "Klarna refused Basic auth. Check KLARNA_USERNAME, KLARNA_PASSWORD and that KLARNA_API_URL is the host for that credential.",
+    "rate_limited": "Klarna is rate limiting this credential. Wait a moment and try again."
+  },
+  "probe": {
+    "tool": "klarna_list_payouts",
+    "params": {
+      "size": 1
+    }
+  },
+  "connector": {
+    "name": "Klarna Order Management and Settlements",
+    "type": "REST",
+    "baseUrl": "{{KLARNA_API_URL}}",
+    "authType": "BASIC_AUTH",
+    "authConfig": {
+      "username": "{{KLARNA_USERNAME}}",
+      "password": "{{KLARNA_PASSWORD}}"
+    },
+    "headers": {
+      "Accept": "application/json"
+    },
+    "healthcheckPath": "/settlements/v1/payouts?size=1"
+  },
+  "tools": [
+    {
+      "name": "klarna_get_order",
+      "description": "Get one Klarna order by Klarna order_id: status (AUTHORIZED, PART_CAPTURED, CAPTURED, CANCELLED, EXPIRED, CLOSED), order_amount, captured_amount, refunded_amount, remaining_authorized_amount, expires_at, order lines, captures, refunds, merchant references and addresses. Amounts are integers in minor units (10000 = 100.00). Your shop's order number is merchant_reference1, not order_id. Read-only.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "description": "Klarna order id (Klarna's id, not your shop order number)."
+          }
+        },
+        "required": [
+          "order_id"
+        ]
+      },
+      "endpointMapping": {
+        "method": "GET",
+        "path": "/ordermanagement/v1/orders/{order_id}"
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "klarna_list_payouts",
+      "description": "List Klarna payouts (settlements to your bank) with totals per payout: sale, fee, return, holdback, reversal, tax and settlement amounts in minor units, plus payment_reference (the bank-statement reference). Filter by payout start_date and end_date (ISO-8601 date-times; a bare date is midnight, so end with T23:59:59Z to include that day) and optional currency_code. Paginated with size (default 20) and offset. Read-only.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "description": "Optional. ISO-8601 date or date-time lower bound for the payout (e.g. 2026-09-01T00:00:00Z)."
+          },
+          "end_date": {
+            "type": "string",
+            "description": "Optional. ISO-8601 date or date-time upper bound for the payout (e.g. 2026-09-30T23:59:59Z to include 30 Sep)."
+          },
+          "currency_code": {
+            "type": "string",
+            "description": "Optional. ISO 4217 currency code to filter by (e.g. EUR, SEK, USD)."
+          },
+          "size": {
+            "type": "integer",
+            "description": "How many payouts to return (default 20).",
+            "minimum": 1
+          },
+          "offset": {
+            "type": "integer",
+            "description": "How many payouts to skip before the first returned (default 0).",
+            "minimum": 0
+          }
+        }
+      },
+      "endpointMapping": {
+        "method": "GET",
+        "path": "/settlements/v1/payouts",
+        "queryParams": {
+          "start_date": "$start_date",
+          "end_date": "$end_date",
+          "currency_code": "$currency_code",
+          "size": "$size",
+          "offset": "$offset"
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "klarna_list_transactions",
+      "description": "List Klarna settlement transactions (SALE, RETURN, FEE, REVERSAL and similar) with amount in minor units, order id, capture/refund ids, merchant references and payment_reference. Filter by payment_reference (a payout from klarna_list_payouts) and/or order_id. Klarna's API has no date filter on this endpoint: for a period, list payouts first and pass each payment_reference. Paginated with size (default 20) and offset. Read-only.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "payment_reference": {
+            "type": "string",
+            "description": "Optional. Payout reference (from klarna_list_payouts or the bank statement) to filter transactions."
+          },
+          "order_id": {
+            "type": "string",
+            "description": "Optional. Klarna order id to filter transactions for that order."
+          },
+          "size": {
+            "type": "integer",
+            "description": "How many transactions to return (default 20).",
+            "minimum": 1
+          },
+          "offset": {
+            "type": "integer",
+            "description": "How many transactions to skip before the first returned (default 0).",
+            "minimum": 0
+          }
+        }
+      },
+      "endpointMapping": {
+        "method": "GET",
+        "path": "/settlements/v1/transactions",
+        "queryParams": {
+          "payment_reference": "$payment_reference",
+          "order_id": "$order_id",
+          "size": "$size",
+          "offset": "$offset"
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    }
+  ]
+}
